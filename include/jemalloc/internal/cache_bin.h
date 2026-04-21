@@ -29,14 +29,14 @@ typedef uint16_t cache_bin_sz_t;
  * bug starts leaking those.  Make it look like the junk pattern but be distinct
  * from it.
  */
-static const uintptr_t cache_bin_preceding_junk = JUNK_ADDR;
+static const void *cache_bin_preceding_junk = (void *)JUNK_ADDR;
 /* Note: JUNK_ADDR vs. JUNK_ADDR + 1 -- this tells you which pointer leaked. */
-static const uintptr_t cache_bin_trailing_junk = JUNK_ADDR + 1;
+static const void *cache_bin_trailing_junk = (void *)(JUNK_ADDR + 1);
 /*
  * A pointer used to initialize a fake stack_head for disabled small bins
  * so that the enabled/disabled assessment does not rely on ncached_max.
  */
-extern const uintptr_t disabled_bin;
+extern void *const disabled_bin;
 
 /*
  * That implies the following value, for the maximum number of items in any
@@ -197,7 +197,9 @@ static inline bool
 cache_bin_disabled(cache_bin_t *bin) {
 	bool disabled = (bin->stack_head == cache_bin_disabled_bin_stack());
 	if (disabled) {
-		assert((uintptr_t)(*bin->stack_head) == JUNK_ADDR);
+		void *val;
+		memcpy(&val, bin->stack_head, sizeof(val));
+		assert((uintptr_t)val == JUNK_ADDR);
 	}
 	return disabled;
 }
@@ -391,8 +393,11 @@ cache_bin_alloc_impl(cache_bin_t *bin, bool *success, bool adjust_low_water) {
 	/*
 	 * This may read from the empty position; however the loaded value won't
 	 * be used.  It's safe because the stack has one more slot reserved.
+	 * Use memcpy to avoid a TBAA violation: the empty position may hold a
+	 * sentinel written as a different type.
 	 */
-	void          *ret = *bin->stack_head;
+	void *ret;
+	memcpy(&ret, bin->stack_head, sizeof(ret));
 	cache_bin_sz_t low_bits = (cache_bin_sz_t)(uintptr_t)bin->stack_head;
 	void         **new_head = bin->stack_head + 1;
 

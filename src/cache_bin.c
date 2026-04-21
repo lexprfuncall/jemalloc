@@ -5,7 +5,7 @@
 #include "jemalloc/internal/cache_bin.h"
 #include "jemalloc/internal/safety_check.h"
 
-const uintptr_t disabled_bin = JUNK_ADDR;
+void *const disabled_bin = (void *)JUNK_ADDR;
 
 void
 cache_bin_info_init(cache_bin_info_t *info, cache_bin_sz_t ncached_max) {
@@ -62,14 +62,14 @@ cache_bin_preincrement(const cache_bin_info_t *infos, szind_t ninfos,
 		assert(((uintptr_t)alloc & (computed_alignment - 1)) == 0);
 	}
 
-	*(uintptr_t *)((byte_t *)alloc
+	*(void **)((byte_t *)alloc
 	    + *cur_offset) = cache_bin_preceding_junk;
 	*cur_offset += sizeof(void *);
 }
 
 void
 cache_bin_postincrement(void *alloc, size_t *cur_offset) {
-	*(uintptr_t *)((byte_t *)alloc + *cur_offset) = cache_bin_trailing_junk;
+	*(void **)((byte_t *)alloc + *cur_offset) = cache_bin_trailing_junk;
 	*cur_offset += sizeof(void *);
 }
 
