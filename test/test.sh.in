@@ -37,20 +37,22 @@ for t in $@; do
   fi
   echo "=== ${t} ==="
   if [ -e "@srcroot@${t}.sh" ] ; then
-    # Source the shell script corresponding to the test in a subshell and
-    # execute the test.  This allows the shell script to set MALLOC_CONF, which
-    # is then used to set @JEMALLOC_CPREFIX@MALLOC_CONF (thus allowing the
-    # per test shell script to ignore the @JEMALLOC_CPREFIX@ detail).
-    enable_fill=@enable_fill@ \
-    enable_prof=@enable_prof@ \
-    disable_large_size_classes=@disable_large_size_classes@ \
-    . @srcroot@${t}.sh && \
-    export_malloc_conf && \
-    $JEMALLOC_TEST_PREFIX ${t}@exe@ @abs_srcroot@ @abs_objroot@
+    # Run the test in a subshell so that MALLOC_CONF exported by the per-test
+    # shell script does not leak to the outer process or subsequent tests.
+    (
+      enable_fill=@enable_fill@ \
+      enable_prof=@enable_prof@ \
+      disable_large_size_classes=@disable_large_size_classes@ \
+      . @srcroot@${t}.sh && \
+      export_malloc_conf && \
+      $JEMALLOC_TEST_PREFIX ${t}@exe@ @abs_srcroot@ @abs_objroot@
+    )
   else
-    export MALLOC_CONF= && \
-    export_malloc_conf && \
-    $JEMALLOC_TEST_PREFIX ${t}@exe@ @abs_srcroot@ @abs_objroot@
+    (
+      export MALLOC_CONF= && \
+      export_malloc_conf && \
+      $JEMALLOC_TEST_PREFIX ${t}@exe@ @abs_srcroot@ @abs_objroot@
+    )
   fi
   result_code=$?
   case ${result_code} in

@@ -2,6 +2,8 @@
 
 #include "test/jemalloc_test.h"
 
+const char *malloc_conf = "experimental_infallible_new:false";
+
 TEST_BEGIN(test_failing_alloc) {
 	bool saw_exception = false;
 	try {

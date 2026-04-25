@@ -2,6 +2,8 @@
 
 #include "test/jemalloc_test.h"
 
+const char *malloc_conf = "experimental_infallible_new:true";
+
 /*
  * We can't test C++ in unit tests.  In order to intercept abort, use a secret
  * safety check abort hook in integration tests.
